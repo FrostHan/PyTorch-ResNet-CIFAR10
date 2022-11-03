@@ -1,0 +1,58 @@
+description: Goal-directed Planning
+
+environment:
+  image: frostofwinter/py37torch:latest
+  registry: docker.io # any public registry can be specified here
+  setup:
+    - pip install tqdm
+    # - git clone https://github.com/benelot/pybullet-gym.git
+    # - cd pybullet-gym
+    # - pip install -e .
+
+storage:
+    input:
+        storage_account_name: msrashaiteamdrive
+        container_name: teamdrive
+        mount_dir: /blob
+
+target:
+  service: singularity
+  name: msrresrchvc  
+  # name: msroctovc
+  # vc: resrchvc
+code:
+  local_dir: $CONFIG_DIR
+
+data:
+  local_dir: data
+  remote_dir: data
+  # storage_id: "CIFAR10"    # optional
+
+# search:
+#   job_template:
+#     # you may use {random_string:s} to avoid job name collisions
+#     # {auto:3s} generates lr_0.00000_mom_0.5, .. etc
+#     # {auto:2s} generates lr_0.00000_mo_0.5, .. etc
+#     name: search_{experiment_name:s}_{auto:3s}
+#     sku: G1
+#     command:
+#     - python train.py --actfn {env} --slres {slres}
+
+#   type: grid
+#   max_trials: 256
+
+#   params:
+#     - name: slres
+#       spec: discrete
+#       values: [0, 1]
+
+#     - name: actfn
+#       spec: discrete
+#       values: ["relu", "tanh"]
+
+
+jobs:
+- name: test
+  sku: 24G1-P40
+  command:
+  - python train.py --debug 1

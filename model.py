@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchsummary import summary
+# from torchsummary import summary
 
 
 def conv0(in_features, out_features=64, act_fn=nn.ReLU):
@@ -128,4 +128,4 @@ class ResNet50(nn.Module):
 if __name__ == "__main__":
     model = ResNet50(num_channels=3).to("cuda")
     model(torch.rand((1, 3, 224, 224)).to("cuda"))
-    summary(model, (3, 224, 224))
+    # summary(model, (3, 224, 224))

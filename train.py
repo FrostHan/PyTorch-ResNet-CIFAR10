@@ -146,7 +146,7 @@ def train(model, loss_function, optimizer, train_loader, validation_loader, num_
 
 if __name__ == "__main__":
     # create/load model
-    model = ResNet50(3, 10, acf_fn=actfn).to(DEVICE)
+    model = ResNet50(3, 10, act_fn=actfn).to(DEVICE)
 
     if LOAD_MODEL_LOC:
         model.load_state_dict(torch.load(LOAD_MODEL_LOC))
