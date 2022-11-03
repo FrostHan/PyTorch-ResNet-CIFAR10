@@ -4,15 +4,32 @@ import torch.nn.functional as nnf
 import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
+import logging
+import argparse
+
 from torch.utils.data import DataLoader
 
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sn
+# import matplotlib.pyplot as plt
+# import seaborn as sn
 
 from tqdm import tqdm
 
 from model import ResNet50
+
+logging.basicConfig(level=logging.INFO)
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--actfn', type=str, default="relu", help="Activation function")
+# parser.add_argument('--seed', type=int, default=0, help="Random seed")
+# parser.add_argument('--batch_size', type=int, default=32, help="batch size")
+# parser.add_argument('--verbose', type=float, default=0, help="Verbose")
+parser.add_argument('--debug', type=int, default=0, help="debug mode")
+# parser.add_argument('--gui', type=int, default=0, help="Pybullet GUI")
+
+args = parser.parse_args()
+
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LEARNING_RATE = 0.001
@@ -21,6 +38,18 @@ NUMBER_OF_EPOCHS = 1000
 SAVE_EVERY_X_EPOCHS = 1
 SAVE_MODEL_LOC = "./save_"
 LOAD_MODEL_LOC = None
+
+if args.debug:
+    BATCH_SIZE = 4
+    NUMBER_OF_EPOCHS = 10
+    SAVE_EVERY_X_EPOCHS = 5
+
+if args.actfn == "relu":
+    actfn = nn.ReLU
+elif args.actfn == "tanh":
+    actfn = nn.Tanh
+else:
+    raise ValueError
 
 
 # a training loop that runs a number of training epochs on a model
@@ -90,34 +119,34 @@ def train(model, loss_function, optimizer, train_loader, validation_loader, num_
         if SAVE_MODEL_LOC:
             torch.save(model.state_dict(), SAVE_MODEL_LOC + str(epoch))
 
-        plt.figure(figsize=(10, 10), dpi=100)
-        plt.scatter(range(0, epoch + 1), accuracies)
-        plt.title("accuracy")
-        plt.show()
+        # plt.figure(figsize=(10, 10), dpi=100)
+        # plt.scatter(range(0, epoch + 1), accuracies)
+        # plt.title("accuracy")
+        # plt.show()
         
-        plt.figure(figsize=(10, 10), dpi=100)
-        plt.scatter(range(0, epoch + 1), total_losses)
-        plt.title("avg loss")
-        plt.show()
+        # plt.figure(figsize=(10, 10), dpi=100)
+        # plt.scatter(range(0, epoch + 1), total_losses)
+        # plt.title("avg loss")
+        # plt.show()
 
         class_labels = list(range(num_classes))
-        ax = sn.heatmap(
-            cm,
-            annot=True,
-            cbar=False,
-            xticklabels=class_labels,
-            yticklabels=class_labels,
-            fmt='g')
-        ax.set(
-            xlabel="prediction",
-            ylabel="truth",
-            title="Validation Confusion Matrix")
-        plt.show()
+        # ax = sn.heatmap(
+        #     cm,
+        #     annot=True,
+        #     cbar=False,
+        #     xticklabels=class_labels,
+        #     yticklabels=class_labels,
+        #     fmt='g')
+        # ax.set(
+        #     xlabel="prediction",
+        #     ylabel="truth",
+        #     title="Validation Confusion Matrix")
+        # plt.show()
 
 
 if __name__ == "__main__":
     # create/load model
-    model = ResNet50(3, 10).to(DEVICE)
+    model = ResNet50(3, 10, acf_fn=actfn).to(DEVICE)
 
     if LOAD_MODEL_LOC:
         model.load_state_dict(torch.load(LOAD_MODEL_LOC))

@@ -3,7 +3,7 @@ import torch.nn as nn
 from torchsummary import summary
 
 
-def conv0(in_features, out_features=64):
+def conv0(in_features, out_features=64, act_fn=nn.ReLU):
     return nn.ModuleList([
         nn.Conv2d(
             in_channels=in_features,
@@ -13,12 +13,12 @@ def conv0(in_features, out_features=64):
             padding=3,
             bias=False),
         nn.BatchNorm2d(out_features),
-        nn.ReLU(inplace=True),
+        act_fn(),
         nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
     ])
 
 
-def conv_x(in_features, mid_features, out_features, final_stride=1):
+def conv_x(in_features, mid_features, out_features, final_stride=1, act_fn=nn.ReLU):
     return nn.ModuleList([
         nn.Conv2d(
             in_channels=in_features,
@@ -28,7 +28,7 @@ def conv_x(in_features, mid_features, out_features, final_stride=1):
             padding=0,
             bias=False),
         nn.BatchNorm2d(mid_features),
-        nn.ReLU(inplace=True),
+        act_fn(),
         nn.Conv2d(in_channels=mid_features,
                   out_channels=mid_features,
                   kernel_size=3,
@@ -36,7 +36,7 @@ def conv_x(in_features, mid_features, out_features, final_stride=1):
                   padding=1,
                   bias=False),
         nn.BatchNorm2d(mid_features),
-        nn.ReLU(inplace=True),
+        act_fn(),
         nn.Conv2d(in_channels=mid_features,
                   out_channels=out_features,
                   kernel_size=1,
@@ -60,7 +60,7 @@ def skip_x(in_features, out_features, final_stride=1):
 
 
 class ResNet50(nn.Module):
-    def __init__(self, num_channels=3, classes=10):
+    def __init__(self, num_channels=3, classes=10, act_fn=nn.ReLU):
         super(ResNet50, self).__init__()
 
         self.num_channels = num_channels
@@ -73,22 +73,22 @@ class ResNet50(nn.Module):
 
         self.blocks = nn.ModuleList()
         self.skip_layers = nn.ModuleList()
-        self.relu_layers = nn.ModuleList()
+        self.actfn_layers = nn.ModuleList()
         self.classifier_block = nn.ModuleList()
 
-        self.conv0_block = conv0(num_channels)
+        self.conv0_block = conv0(num_channels, act_fn=act_fn)
 
         for repeat, in_features, mid_features in zip(block_repeats_lis, in_features_lis, mid_features_lis):
-            self.blocks.append(conv_x(in_features, mid_features, scale * mid_features))
+            self.blocks.append(conv_x(in_features, mid_features, scale * mid_features, act_fn=act_fn))
             self.skip_layers.append(skip_x(in_features, scale * mid_features))
-            self.relu_layers.append(nn.ReLU(inplace=True))
+            self.actfn_layers.append(act_fn())
             for i in range(repeat - 2):
-                self.blocks.append(conv_x(scale * mid_features, mid_features, scale * mid_features, final_stride=1))
+                self.blocks.append(conv_x(scale * mid_features, mid_features, scale * mid_features, final_stride=1, act_fn=act_fn))
                 self.skip_layers.append(nn.ModuleList([nn.Identity()]))
-                self.relu_layers.append(nn.ReLU(inplace=True))
-            self.blocks.append(conv_x(scale * mid_features, mid_features, scale * mid_features, final_stride=2))
+                self.actfn_layers.append(act_fn())
+            self.blocks.append(conv_x(scale * mid_features, mid_features, scale * mid_features, final_stride=2, act_fn=act_fn))
             self.skip_layers.append(skip_x(mid_features * scale, mid_features * scale, final_stride=2))
-            self.relu_layers.append(nn.ReLU(inplace=True))
+            self.actfn_layers.append(act_fn())
 
         flat_image_size = mid_features_lis[-1] * scale
 
@@ -104,7 +104,7 @@ class ResNet50(nn.Module):
         for module in self.conv0_block:
             x_ = module(x_)
 
-        for index, (block, skip_layer, relu) in enumerate(zip(self.blocks, self.skip_layers, self.relu_layers)):
+        for index, (block, skip_layer, actfn) in enumerate(zip(self.blocks, self.skip_layers, self.actfn_layers)):
             interm_x_ = x_.clone()
 
             for module in block:
@@ -117,7 +117,7 @@ class ResNet50(nn.Module):
 
             x_ = interm_x_ + skip_x_
 
-            x_ = relu(x_)
+            x_ = actfn(x_)
 
         for layer in self.classifier_block:
             x_ = layer(x_)
