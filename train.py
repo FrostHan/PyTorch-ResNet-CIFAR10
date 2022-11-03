@@ -13,7 +13,7 @@ import numpy as np
 # import matplotlib.pyplot as plt
 # import seaborn as sn
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
 from model import ResNet50
 
@@ -32,6 +32,8 @@ args = parser.parse_args()
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+if DEVICE == "cuda":
+    logging.info("========== Using CUDA =============")
 LEARNING_RATE = 0.001
 BATCH_SIZE = 64
 NUMBER_OF_EPOCHS = 1000
@@ -59,10 +61,10 @@ def train(model, loss_function, optimizer, train_loader, validation_loader, num_
     for epoch in range(NUMBER_OF_EPOCHS):
         # Training
         model.train()
-        progress = tqdm(train_loader)
+        # progress = tqdm(train_loader)
 
         # get the inputs; data is a list of [x, y]
-        for i, (x, y) in enumerate(progress):
+        for i, (x, y) in enumerate(train_loader):
             # https://stackoverflow.com/a/58677827
             x = nnf.interpolate(x, size=(224, 224), mode='bicubic', align_corners=False)
 
@@ -76,7 +78,7 @@ def train(model, loss_function, optimizer, train_loader, validation_loader, num_
             loss = loss_function(x_, y)
 
             # make the progress bar display loss
-            progress.set_postfix(loss=loss.item())
+            # progress.set_postfix(loss=loss.item())
 
             # backpropagation
             loss.backward()
@@ -85,14 +87,14 @@ def train(model, loss_function, optimizer, train_loader, validation_loader, num_
         # Validation
         model.eval()
 
-        progress = tqdm(validation_loader)
+        # progress = tqdm(validation_loader)
 
         total_correct = 0
         total_loss = 0.0
         total = 0
         cm = np.zeros((num_classes, num_classes))
 
-        for i, (x, y) in enumerate(progress):
+        for i, (x, y) in enumerate(validation_loader):
             x = nnf.interpolate(x, size=(224, 224), mode='bicubic', align_corners=False)
 
             x = x.to(DEVICE)
@@ -111,8 +113,8 @@ def train(model, loss_function, optimizer, train_loader, validation_loader, num_
             total_loss += loss.item()
         accuracy = (total_correct * 100.0) / total
         total_loss /= total
-        print("Validation accuracy = " + str(accuracy) + "% = " + str(total_correct) + "/" + str(total))
-        print("Validation avg. loss = " + str(total_loss))
+        logging.info("Validation accuracy = " + str(accuracy) + "% = " + str(total_correct) + "/" + str(total))
+        logging.info("Validation avg. loss = " + str(total_loss))
         accuracies.append(accuracy)
         total_losses.append(total_loss)
 

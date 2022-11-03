@@ -1,7 +1,7 @@
 description: Goal-directed Planning
 
 environment:
-  image: frostofwinter/py37torch:latest
+  image: frostofwinter/py37torch:2022
   registry: docker.io # any public registry can be specified here
   setup:
     - pip install tqdm
